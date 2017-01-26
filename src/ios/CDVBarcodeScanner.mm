@@ -8,6 +8,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <AssetsLibrary/AssetsLibrary.h>
+#import <AudioToolbox/AudioToolbox.h>
 
 //------------------------------------------------------------------------------
 // use the all-in-one version of zxing that we built
@@ -286,7 +287,7 @@
 @synthesize capturing            = _capturing;
 @synthesize results              = _results;
 
-SystemSoundID _soundFileObject;
+/* SystemSoundID _soundFileObject; */
 
 //--------------------------------------------------------------------------
 - (id)initWithPlugin:(CDVBarcodeScanner*)plugin
@@ -307,7 +308,7 @@ parentViewController:(UIViewController*)parentViewController
     self.results = [[NSMutableArray new] autorelease];
 
     CFURLRef soundFileURLRef  = CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTR("CDVBarcodeScanner.bundle/beep"), CFSTR ("caf"), NULL);
-    AudioServicesCreateSystemSoundID(soundFileURLRef, &_soundFileObject);
+    /* AudioServicesCreateSystemSoundID(soundFileURLRef, &_soundFileObject); */
 
     return self;
 }
@@ -325,8 +326,8 @@ parentViewController:(UIViewController*)parentViewController
 
     self.capturing = NO;
 
-    AudioServicesRemoveSystemSoundCompletion(_soundFileObject);
-    AudioServicesDisposeSystemSoundID(_soundFileObject);
+    /*AudioServicesRemoveSystemSoundCompletion(_soundFileObject); 
+    AudioServicesDisposeSystemSoundID(_soundFileObject);*/
 
     [super dealloc];
 }
@@ -406,7 +407,8 @@ parentViewController:(UIViewController*)parentViewController
         [self barcodeScanDone:^{
             [self.plugin returnSuccess:text format:format cancelled:FALSE flipped:FALSE callback:self.callback];
         }];
-        AudioServicesPlaySystemSound(_soundFileObject);
+				AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+        /* AudioServicesPlaySystemSound(_soundFileObject); */
     });
 }
 
