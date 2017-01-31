@@ -46,7 +46,7 @@
 - (void)scan:(CDVInvokedUrlCommand*)command;
 - (void)encode:(CDVInvokedUrlCommand*)command;
 - (void)returnImage:(NSString*)filePath format:(NSString*)format callback:(NSString*)callback;
-- (void)returnSuccess:(NSString*)callback;
+- (void)returnSuccess:(NSMutableArray*)scannedCodes callback:(NSString*)callback;
 - (void)returnError:(NSString*)message callback:(NSString*)callback;
 @end
 
@@ -62,7 +62,9 @@
 @property (nonatomic, retain) AVCaptureVideoPreviewLayer* previewLayer;
 @property (nonatomic, retain) NSString*                   alternateXib;
 @property (nonatomic, retain) NSMutableArray*             results;
+@property (nonatomic, retain) NSMutableArray*             scannedCodes;
 @property (nonatomic, retain) NSString*                   formats;
+@property (nonatomic)         BOOL                        multiScan;
 @property (nonatomic)         BOOL                        is1D;
 @property (nonatomic)         BOOL                        is2D;
 @property (nonatomic)         BOOL                        capturing;
@@ -73,7 +75,7 @@
 @property (nonatomic)         BOOL                        isTransitionAnimated;
 
 
-- (id)initWithPlugin:(CDVBarcodeScanner*)plugin callback:(NSString*)callback parentViewController:(UIViewController*)parentViewController alterateOverlayXib:(NSString *)alternateXib;
+- (id)initWithPlugin:(CDVBarcodeScanner*)plugin multiScan:(BOOL)multiScan callback:(NSString*)callback parentViewController:(UIViewController*)parentViewController alterateOverlayXib:(NSString *)alternateXib;
 - (void)scanBarcode;
 - (void)barcodeScanSucceeded:(NSString*)text format:(NSString*)format;
 - (void)barcodeScanFailed:(NSString*)message;
@@ -161,12 +163,14 @@
     } else {
       options = command.arguments[0];
     }
+  
+    BOOL multiScan = NO;
 
     BOOL preferFrontCamera = [options[@"preferFrontCamera"] boolValue];
     BOOL showFlipCameraButton = [options[@"showFlipCameraButton"] boolValue];
     BOOL showTorchButton = [options[@"showTorchButton"] boolValue];
     BOOL disableAnimations = [options[@"disableAnimations"] boolValue];
-    BOOL multiScan = [options[@"multiscan"] boolValue];
+    multiScan = [options[@"multiscan"] boolValue];
 
     // We allow the user to define an alternate xib file for loading the overlay.
     NSString *overlayXib = options[@"overlayXib"];
@@ -183,6 +187,7 @@
 
     processor = [[[CDVbcsProcessor alloc]
                 initWithPlugin:self
+                    multiScan:multiScan
                       callback:callback
           parentViewController:self.viewController
             alterateOverlayXib:overlayXib
@@ -244,10 +249,10 @@
 }
 
 //--------------------------------------------------------------------------
-- (void)returnSuccess:(NSString*)callback{
+- (void)returnSuccess:(NSMutableArray*)scannedCodes callback:(NSString*)callback{
     CDVPluginResult* result = [CDVPluginResult
                                resultWithStatus: CDVCommandStatus_OK
-                               messageAsDictionary: self.scannedCodes
+                               messageAsArray: scannedCodes
                                ];
     [self.commandDelegate sendPluginResult:result callbackId:callback];
 }
@@ -270,6 +275,7 @@
 @implementation CDVbcsProcessor
 
 @synthesize plugin               = _plugin;
+@synthesize multiScan            = _multiScan;
 @synthesize callback             = _callback;
 @synthesize parentViewController = _parentViewController;
 @synthesize viewController       = _viewController;
@@ -280,11 +286,13 @@
 @synthesize is2D                 = _is2D;
 @synthesize capturing            = _capturing;
 @synthesize results              = _results;
+@synthesize scannedCodes              = _scannedCodes;
 
 /* SystemSoundID _soundFileObject; */
 
 //--------------------------------------------------------------------------
 - (id)initWithPlugin:(CDVBarcodeScanner*)plugin
+           multiScan:(BOOL)multiScan
             callback:(NSString*)callback
 parentViewController:(UIViewController*)parentViewController
   alterateOverlayXib:(NSString *)alternateXib {
@@ -295,6 +303,7 @@ parentViewController:(UIViewController*)parentViewController
     self.callback             = callback;
     self.parentViewController = parentViewController;
     self.alternateXib         = alternateXib;
+    self.multiScan            = multiScan;
 
     self.is1D      = YES;
     self.is2D      = YES;
@@ -398,19 +407,17 @@ parentViewController:(UIViewController*)parentViewController
 
 //--------------------------------------------------------------------------
 - (void)barcodeScanSucceeded:(NSString*)text format:(NSString*)format {
-	NSMutableDictionary* resultDict = [[NSMutableDictionary new] autorelease];
-  resultDict[@"text"] = text;
-  resultDict[@"format"] = format;
-  resultDict[@"cancelled"] = 0;
-	[self.scannedCodes addObject:resultDict];
-	AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
-	if (!multiscan) {
-		dispatch_sync(dispatch_get_main_queue(), ^{
+  if (![[self.scannedCodes lastObject] isEqualToString:text]) {
+    dispatch_sync(dispatch_get_main_queue(), ^{
+      [self.scannedCodes addObject:text];
+      AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+      if (!self.multiScan) {
         [self barcodeScanDone:^{
-            [self.plugin returnSuccess:self.callback];
+          [self.plugin returnSuccess:self.scannedCodes callback:self.callback];
         }];
+      }
     });
-	}
+  }
 }
 
 //--------------------------------------------------------------------------
@@ -423,7 +430,7 @@ parentViewController:(UIViewController*)parentViewController
 //--------------------------------------------------------------------------
 - (void)barcodeScanCancelled {
     [self barcodeScanDone:^{
-				[self.plugin returnSuccess:self.callback];
+      [self.plugin returnSuccess:self.scannedCodes callback:self.callback];
     }];
     if (self.isFlipped) {
         self.isFlipped = NO;
@@ -496,10 +503,9 @@ parentViewController:(UIViewController*)parentViewController
 
     [output setMetadataObjectsDelegate:self queue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0)];
 
-    // if ([captureSession canSetSessionPreset:AVCaptureSessionPresetHigh]) {
-    //  captureSession.sessionPreset = AVCaptureSessionPresetHigh;
-    //} else 
-		if ([captureSession canSetSessionPreset:AVCaptureSessionPresetMedium]) {
+     if ([captureSession canSetSessionPreset:AVCaptureSessionPresetHigh]) {
+      captureSession.sessionPreset = AVCaptureSessionPresetHigh;
+    } else if ([captureSession canSetSessionPreset:AVCaptureSessionPresetMedium]) {
       captureSession.sessionPreset = AVCaptureSessionPresetMedium;
     } else {
       return @"unable to preset high nor medium quality video capture";
