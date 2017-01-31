@@ -46,7 +46,7 @@
 - (void)scan:(CDVInvokedUrlCommand*)command;
 - (void)encode:(CDVInvokedUrlCommand*)command;
 - (void)returnImage:(NSString*)filePath format:(NSString*)format callback:(NSString*)callback;
-- (void)returnSuccess:(NSString*)scannedText format:(NSString*)format cancelled:(BOOL)cancelled flipped:(BOOL)flipped callback:(NSString*)callback;
+- (void)returnSuccess:(NSString*)callback;
 - (void)returnError:(NSString*)message callback:(NSString*)callback;
 @end
 
@@ -166,6 +166,7 @@
     BOOL showFlipCameraButton = [options[@"showFlipCameraButton"] boolValue];
     BOOL showTorchButton = [options[@"showTorchButton"] boolValue];
     BOOL disableAnimations = [options[@"disableAnimations"] boolValue];
+    BOOL multiScan = [options[@"multiscan"] boolValue];
 
     // We allow the user to define an alternate xib file for loading the overlay.
     NSString *overlayXib = options[@"overlayXib"];
@@ -243,17 +244,10 @@
 }
 
 //--------------------------------------------------------------------------
-- (void)returnSuccess:(NSString*)scannedText format:(NSString*)format cancelled:(BOOL)cancelled flipped:(BOOL)flipped callback:(NSString*)callback{
-    NSNumber* cancelledNumber = @(cancelled ? 1 : 0);
-
-    NSMutableDictionary* resultDict = [[NSMutableDictionary new] autorelease];
-    resultDict[@"text"] = scannedText;
-    resultDict[@"format"] = format;
-    resultDict[@"cancelled"] = cancelledNumber;
-
+- (void)returnSuccess:(NSString*)callback{
     CDVPluginResult* result = [CDVPluginResult
                                resultWithStatus: CDVCommandStatus_OK
-                               messageAsDictionary: resultDict
+                               messageAsDictionary: self.scannedCodes
                                ];
     [self.commandDelegate sendPluginResult:result callbackId:callback];
 }
@@ -306,6 +300,7 @@ parentViewController:(UIViewController*)parentViewController
     self.is2D      = YES;
     self.capturing = NO;
     self.results = [[NSMutableArray new] autorelease];
+		self.scannedCodes = [[NSMutableArray new] autorelease];
 
     CFURLRef soundFileURLRef  = CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTR("CDVBarcodeScanner.bundle/beep"), CFSTR ("caf"), NULL);
     /* AudioServicesCreateSystemSoundID(soundFileURLRef, &_soundFileObject); */
@@ -403,13 +398,19 @@ parentViewController:(UIViewController*)parentViewController
 
 //--------------------------------------------------------------------------
 - (void)barcodeScanSucceeded:(NSString*)text format:(NSString*)format {
-    dispatch_sync(dispatch_get_main_queue(), ^{
+	NSMutableDictionary* resultDict = [[NSMutableDictionary new] autorelease];
+  resultDict[@"text"] = text;
+  resultDict[@"format"] = format;
+  resultDict[@"cancelled"] = 0;
+	[self.scannedCodes addObject:resultDict];
+	AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
+	if (!multiscan) {
+		dispatch_sync(dispatch_get_main_queue(), ^{
         [self barcodeScanDone:^{
-            [self.plugin returnSuccess:text format:format cancelled:FALSE flipped:FALSE callback:self.callback];
+            [self.plugin returnSuccess:self.callback];
         }];
-				AudioServicesPlayAlertSound(kSystemSoundID_Vibrate);
-        /* AudioServicesPlaySystemSound(_soundFileObject); */
     });
+	}
 }
 
 //--------------------------------------------------------------------------
@@ -422,7 +423,7 @@ parentViewController:(UIViewController*)parentViewController
 //--------------------------------------------------------------------------
 - (void)barcodeScanCancelled {
     [self barcodeScanDone:^{
-        [self.plugin returnSuccess:@"" format:@"" cancelled:TRUE flipped:self.isFlipped callback:self.callback];
+				[self.plugin returnSuccess:self.callback];
     }];
     if (self.isFlipped) {
         self.isFlipped = NO;
