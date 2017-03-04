@@ -223,7 +223,7 @@ public class BarcodeScanner extends CordovaPlugin {
 								//v.vibrate(300);
 								this.scannedCodes.put(intent.getStringExtra("SCAN_RESULT"));
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                // this.callbackContext.success(this.scannedCodes);
+                this.callbackContext.success(this.scannedCodes);
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 this.callbackContext.success(this.scannedCodes);
             } else {
