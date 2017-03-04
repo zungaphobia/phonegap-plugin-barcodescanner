@@ -227,7 +227,7 @@ public class BarcodeScanner extends CordovaPlugin {
                 } catch (JSONException e) {
                     Log.d(LOG_TAG, "This should never happen");
                 }
-								Vibrator v = (Vibrator) this.callbackContext.getSystemService(Context.VIBRATOR_SERVICE);
+								Vibrator v = (Vibrator) this.callbackContext.getSystemService(CallbackContext.VIBRATOR_SERVICE);
 								v.vibrate(300);
 								this.scannedCodes.add(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
