@@ -93,6 +93,7 @@ public class BarcodeScanner extends CordovaPlugin {
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         this.callbackContext = callbackContext;
         this.requestArgs = args;
+				this.scannedCodes = new JSONArray();
 
         if (action.equals(ENCODE)) {
             JSONObject obj = args.optJSONObject(0);
