@@ -228,9 +228,9 @@ public class BarcodeScanner extends CordovaPlugin {
                 }
 								Vibrator v = (Vibrator) this.context.getSystemService(Context.VIBRATOR_SERVICE);
 								v.vibrate(300);
-								self.scannedCodes.add(obj);
+								this.scannedCodes.add(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(self.scannedCodes);
+                this.callbackContext.success(this.scannedCodes);
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 JSONObject obj = new JSONObject();
                 try {
@@ -240,9 +240,9 @@ public class BarcodeScanner extends CordovaPlugin {
                 } catch (JSONException e) {
                     Log.d(LOG_TAG, "This should never happen");
                 }
-								self.scannedCodes.add(obj);
+								this.scannedCodes.add(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(self.scannedCodes);
+                this.callbackContext.success(this.scannedCodes);
             } else {
                 //this.error(new PluginResult(PluginResult.Status.ERROR), this.callback);
                 this.callbackContext.error("Unexpected error");
