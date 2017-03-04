@@ -229,7 +229,7 @@ public class BarcodeScanner extends CordovaPlugin {
                 }
 								//Vibrator v = (Vibrator) this.callbackContext.getSystemService(CallbackContext.VIBRATOR_SERVICE);
 								//v.vibrate(300);
-								this.scannedCodes.add(obj);
+								this.scannedCodes.put(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
                 this.callbackContext.success(this.scannedCodes);
             } else if (resultCode == Activity.RESULT_CANCELED) {
@@ -241,7 +241,7 @@ public class BarcodeScanner extends CordovaPlugin {
                 } catch (JSONException e) {
                     Log.d(LOG_TAG, "This should never happen");
                 }
-								this.scannedCodes.add(obj);
+								this.scannedCodes.put(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
                 this.callbackContext.success(this.scannedCodes);
             } else {
