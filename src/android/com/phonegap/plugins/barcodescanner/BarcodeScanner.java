@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.content.pm.PackageManager;
+import android.os.Vibrator;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -48,6 +49,7 @@ public class BarcodeScanner extends CordovaPlugin {
     private static final String SHOW_FLIP_CAMERA_BUTTON = "showFlipCameraButton";
     private static final String RESULTDISPLAY_DURATION = "resultDisplayDuration";
     private static final String SHOW_TORCH_BUTTON = "showTorchButton";
+    private static final String MULTISCAN = "multiscan";
     private static final String TORCH_ON = "torchOn";
     private static final String FORMATS = "formats";
     private static final String PROMPT = "prompt";
@@ -62,6 +64,8 @@ public class BarcodeScanner extends CordovaPlugin {
 
     private JSONArray requestArgs;
     private CallbackContext callbackContext;
+
+		private JSONArray scannedCodes;
 
     /**
      * Constructor.
@@ -176,6 +180,7 @@ public class BarcodeScanner extends CordovaPlugin {
                         intentScan.putExtra(Intents.Scan.CAMERA_ID, obj.optBoolean(PREFER_FRONTCAMERA, false) ? 1 : 0);
                         intentScan.putExtra(Intents.Scan.SHOW_FLIP_CAMERA_BUTTON, obj.optBoolean(SHOW_FLIP_CAMERA_BUTTON, false));
                         intentScan.putExtra(Intents.Scan.SHOW_TORCH_BUTTON, obj.optBoolean(SHOW_TORCH_BUTTON, false));
+                        intentScan.putExtra(Intents.Scan.MULTISCAN, obj.optBoolean(MULTISCAN, false));
                         intentScan.putExtra(Intents.Scan.TORCH_ON, obj.optBoolean(TORCH_ON, false));
                         if (obj.has(RESULTDISPLAY_DURATION)) {
                             intentScan.putExtra(Intents.Scan.RESULT_DISPLAY_DURATION_MS, "" + obj.optLong(RESULTDISPLAY_DURATION));
@@ -221,8 +226,11 @@ public class BarcodeScanner extends CordovaPlugin {
                 } catch (JSONException e) {
                     Log.d(LOG_TAG, "This should never happen");
                 }
+								Vibrator v = (Vibrator) this.context.getSystemService(Context.VIBRATOR_SERVICE);
+								v.vibrate(300);
+								self.scannedCodes.add(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(obj);
+                this.callbackContext.success(self.scannedCodes);
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 JSONObject obj = new JSONObject();
                 try {
@@ -232,8 +240,9 @@ public class BarcodeScanner extends CordovaPlugin {
                 } catch (JSONException e) {
                     Log.d(LOG_TAG, "This should never happen");
                 }
+								self.scannedCodes.add(obj);
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(obj);
+                this.callbackContext.success(self.scannedCodes);
             } else {
                 //this.error(new PluginResult(PluginResult.Status.ERROR), this.callback);
                 this.callbackContext.error("Unexpected error");
