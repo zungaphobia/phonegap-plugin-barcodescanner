@@ -219,30 +219,12 @@ public class BarcodeScanner extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == REQUEST_CODE && this.callbackContext != null) {
             if (resultCode == Activity.RESULT_OK) {
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put(TEXT, intent.getStringExtra("SCAN_RESULT"));
-                    obj.put(FORMAT, intent.getStringExtra("SCAN_RESULT_FORMAT"));
-                    obj.put(CANCELLED, false);
-                } catch (JSONException e) {
-                    Log.d(LOG_TAG, "This should never happen");
-                }
 								//Vibrator v = (Vibrator) this.callbackContext.getSystemService(CallbackContext.VIBRATOR_SERVICE);
 								//v.vibrate(300);
-								this.scannedCodes.put(obj);
+								this.scannedCodes.put(intent.getStringExtra("SCAN_RESULT"));
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(this.scannedCodes);
+                // this.callbackContext.success(this.scannedCodes);
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                JSONObject obj = new JSONObject();
-                try {
-                    obj.put(TEXT, "");
-                    obj.put(FORMAT, "");
-                    obj.put(CANCELLED, true);
-                } catch (JSONException e) {
-                    Log.d(LOG_TAG, "This should never happen");
-                }
-								this.scannedCodes.put(obj);
-                //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
                 this.callbackContext.success(this.scannedCodes);
             } else {
                 //this.error(new PluginResult(PluginResult.Status.ERROR), this.callback);
