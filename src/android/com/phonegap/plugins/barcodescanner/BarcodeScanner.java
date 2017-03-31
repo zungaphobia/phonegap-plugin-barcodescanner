@@ -18,7 +18,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.content.pm.PackageManager;
-//import android.os.Vibrator;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -182,7 +181,9 @@ public class BarcodeScanner extends CordovaPlugin {
                         intentScan.putExtra(Intents.Scan.SHOW_FLIP_CAMERA_BUTTON, obj.optBoolean(SHOW_FLIP_CAMERA_BUTTON, false));
                         intentScan.putExtra(Intents.Scan.SHOW_TORCH_BUTTON, obj.optBoolean(SHOW_TORCH_BUTTON, false));
                         // intentScan.putExtra(Intents.Scan.MULTISCAN, obj.optBoolean(MULTISCAN, false));
-                        intentScan.putExtra(Intents.Scan.TORCH_ON, obj.optBoolean(TORCH_ON, false));
+												// intentScan.putExtra(Intents.Scan.BULK_SCAN, obj.optBoolean(MULTISCAN, false));
+												intentScan.putExtra("multiscan", obj.optBoolean(MULTISCAN, false));
+                        intentScan.putExtra(Intents.Scan.TORCH_ON, obj.optBoolean(TORCH_ON, true));
                         if (obj.has(RESULTDISPLAY_DURATION)) {
                             intentScan.putExtra(Intents.Scan.RESULT_DISPLAY_DURATION_MS, "" + obj.optLong(RESULTDISPLAY_DURATION));
                         }
@@ -219,11 +220,37 @@ public class BarcodeScanner extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == REQUEST_CODE && this.callbackContext != null) {
             if (resultCode == Activity.RESULT_OK) {
-								//Vibrator v = (Vibrator) this.callbackContext.getSystemService(CallbackContext.VIBRATOR_SERVICE);
-								//v.vibrate(300);
 								this.scannedCodes.put(intent.getStringExtra("SCAN_RESULT"));
                 //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-                this.callbackContext.success(this.scannedCodes);
+								Boolean multiscan = false;
+
+                if (this.requestArgs.length() > 0) {
+
+                    JSONObject obj;
+                    JSONArray names;
+                    String key;
+                    Object value;
+
+                    for (int i = 0; i < this.requestArgs.length(); i++) {
+
+                        try {
+                            obj = this.requestArgs.getJSONObject(i);
+                        } catch (JSONException e) {
+                            Log.i("CordovaLog", e.getLocalizedMessage());
+                            continue;
+                        }
+												
+												multiscan = obj.optBoolean(MULTISCAN, false);
+												
+                    }
+
+                }
+
+								if (multiscan) {
+									scan(this.requestArgs);
+								} else {
+									this.callbackContext.success(this.scannedCodes);
+								}
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 this.callbackContext.success(this.scannedCodes);
             } else {
