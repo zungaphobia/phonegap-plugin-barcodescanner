@@ -175,6 +175,7 @@
     BOOL showFlipCameraButton = [options[@"showFlipCameraButton"] boolValue];
     BOOL showTorchButton = [options[@"showTorchButton"] boolValue];
     BOOL disableAnimations = [options[@"disableAnimations"] boolValue];
+		BOOL disableSuccessBeep = [options[@"disableSuccessBeep"] boolValue];
     multiScan = [options[@"multiscan"] boolValue];
 
     // We allow the user to define an alternate xib file for loading the overlay.
